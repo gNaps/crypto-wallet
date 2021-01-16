@@ -1,0 +1,27 @@
+.title{
+    text-align: center;
+    line-height: 24px;
+}
+
+.nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 32px;
+    background: rgb(22, 82, 240);
+    color: #FFF;
+}
+
+.back {
+    cursor: pointer;
+}
+
+.auth img {
+    width: 25px;
+    height: 25px;
+    color: #FFF;
+}
+
+.nav a {
+    color: #FFF
+}
