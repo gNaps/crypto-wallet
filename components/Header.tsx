@@ -28,7 +28,7 @@ export default () => {
             <div className={styles.title}>
                 <Link href="/">
                     <a>
-                        <h1>NextJs Magic Template</h1>
+                        <h1>Crypto Wallet</h1>
                     </a>
                 </Link>
             </div>

@@ -1,99 +1,63 @@
 import Head from 'next/head';
 import { useContext, useState } from 'react';
+import { Magic } from 'magic-sdk';
+import { MAGIC_PUBLIC_KEY } from '../utils/urls';
+import { ethers } from 'ethers';
 
 import AuthContext from '../context/AuthContext';
 
 import styles from '../styles/Home.module.css';
-import { Market } from '../models/Market';
-import { Question } from '../models/Question';
+
 
 export default function Home() {
-    const { user } = useContext(AuthContext);
-    const [question, setQuestion] = useState(new Question())
-    const [outcomes, setOutcomes] = useState([])
-    const [outcome, setOutcome] = useState('')
-    const [fee, setFee] = useState(0)
-    const [oracle, setOracle] = useState('')
-
+    const { user, provider, providerMatic } = useContext(AuthContext)
+    const [ address, setAddress ] = useState('')
+    const [ usdc, setUsdc ] = useState(0)
+    const [ matic, setMatic ] = useState(false)
+    
     /**
-     * On change of inputs update the question
+     * Given an address return the amount of usdc 
      * @param e 
+     * @param address 
      */
-    const handleChangeQuestion = (e: any) => {
-        const { name, value } = e.target
-        setQuestion(question => ({...question, [name]: value}))
-    }
-
-    /**
-     * On change of inputs update the outcome
-     * @param e 
-     */
-    const handleChangeOutcome = (e: any) => {
-        setOutcome(e.target.value)
-    }
-
-    /**
-     * On change of inputs update the fee
-     * @param e 
-     */
-    const handleChangeFee = (e: any) => {
-        setFee(e.target.value)
-    }
-
-    /**
-     * Add the outcome to array outcomes
-     */
-    const handleClickOutcome = () => {
-        outcomes.push(outcome)
-        setOutcomes(outcomes)
-        setOutcome('')
-    }
-
-    /**
-     * On change of inputs update the oracle
-     * @param e 
-     */
-    const handleChangeOracle = (e: any) => {
-        setOracle(e.target.value)
-    }
-
-    /**
-     * Delete the outcome selected to outcomes
-     * @param outcome 
-     */
-    const deleteOutcome = (outcome) => {
-        const newOutcomes = [...outcomes]
-        const index = outcomes.findIndex(out => out === outcome)
-
-        if(index > -1) {
-            newOutcomes.splice(index, 1)
-        }
-
-        setOutcomes(newOutcomes)
-    }
-
-    /**
-     * Save the market
-     * @param e 
-     */
-    const handleSubmit = (e: any) => {
+    const readFromContract = async (e: any, address: string) => {
         e.preventDefault()
 
-        const market: Market = new Market()
-        market.question = question
-        market.condition = {outcomes: outcomes, oracle: oracle}
-        market.fee = fee
-        
-        console.log('Market => ', market)
+        const abi = ["function balanceOf(address owner) view returns (uint256)"]
+        let contractAddress: string
+        let signer: any
+
+        if(matic) {
+            contractAddress = "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174"
+            signer = providerMatic.getSigner()
+        } else {
+            contractAddress = "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"
+            signer = provider.getSigner()
+        }
+
+        const contract = new ethers.Contract(
+            contractAddress,
+            abi,
+            signer
+        );
+
+        const message = await contract.balanceOf(address)
+
+        const number = message.toString()
+        const numberParsed = ethers.utils.formatUnits(number, 'mwei')
+
+        console.log('number parsed ', numberParsed)
+
+        setUsdc(parseFloat(numberParsed))
     }
 
     return (
         <div>
             <Head>
-                <title>NextJS Magic template</title>
+                <title>Crypto Wallet</title>
                 <meta
                     name="description"
-                    content="Nextjs Magic template"
+                    content="Crypto Wallet"
                 />
             </Head>
 
@@ -104,69 +68,28 @@ export default function Home() {
             } 
 
             {user && 
-            <form onSubmit={handleSubmit} className={styles.form_market}>
-                <h3> Question </h3>
-
-                <h6>Title</h6>
-                <input
-                    type="text"
-                    value={question.title}
-                    name='title'
-                    onChange={handleChangeQuestion} />
-
-                <h6>Description</h6>
-                <textarea
-                    value={question.description}
-                    name='description'
-                    onChange={handleChangeQuestion} /> 
-
-                <h3> Outcomes </h3>
-                <input
-                    type="text"
-                    value={outcome}
-                    name='outcome'
-                    onChange={handleChangeOutcome} /> 
-
-                <button onClick={handleClickOutcome}>
-                    Add
-                </button>
-
-                {outcomes &&
-                    <div className={styles.table}>
-                        {outcomes.map((outcome) => (
-                            <div 
-                                className={styles.element} 
-                                key={outcome}
-                                onClick={() => deleteOutcome(outcome)}>
-                                <img src={'/times-solid.svg'} />
-                                <p>{outcome}</p>
-                            </div>
-                        ))}
-                    </div>
-                }
-
-                <h3> Oracle </h3>
-                <input
-                    type="text"
-                    value={oracle}
-                    name='oracle'
-                    onChange={handleChangeOracle} /> 
-
-                <h3> Fee </h3>
-                <input
-                    type="number"
-                    value={fee}
-                    name='fee'
-                    onChange={handleChangeFee} /> 
-                    
-                <div className={styles.submit}>
-                    <button type="submit">
-                        Save Market
-                    </button>
+                <>
+                <div className={styles.networks}>
+                    <h4 className={matic ? `` : `${styles.active}`} onClick={() => setMatic(false)}>Mainnet</h4>
+                    <h4 className={matic ? `${styles.active}` : ``} onClick={() => setMatic(true)}>Matic</h4>
                 </div>
-                
-            </form>
+                <form onSubmit={(e) => readFromContract(e, address)} className={styles.form_market}>
+                    <h2>Digit your address</h2>
+                    <input
+                        type="text"
+                        value={address}
+                        name='address'
+                        onChange={(e) => setAddress(e.target.value)} />
+                    
+                    <button type='submit'>How much usdc?</button>
+                </form>
+                <h6>
+                    {usdc}
+                </h6>
+                </>
             }
         </div>
     );
 }
+
+//usdc address 0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48
