@@ -1,1 +1,1 @@
-This is a starter template for [Learn Next.js](https://nextjs.org/learn).
+A simple interface than given an eth address return the amount of usdc on mainnet or matic.
